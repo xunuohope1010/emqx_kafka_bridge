@@ -73,7 +73,7 @@ end}.
                        end, Items);
              "auth" ->  lists:map(fun(Item)->
                        [Option, Value] = string:tokens(Item, ":"),
-                       {list_to_atom(string:trim(Option)), Value}
+                       {list_to_atom(string:trim(Option)), list_to_atom(string:trim(Value))}
                        end, Items)          
           end
   end, Config),
