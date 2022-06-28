@@ -22,6 +22,8 @@
         , unload/0
         ]).
 
+-define(APP, emqx_kafka_bridge).
+
 %% Client Lifecircle Hooks
 -export([ on_client_connect/3
         , on_client_connack/4
