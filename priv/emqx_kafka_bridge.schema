@@ -20,6 +20,10 @@
   {datatype, string}
 ]}.
 
+{mapping, "emqx.kafka.bridge.client.auth", "emqx_kafka_bridge.client", [
+  {datatype, string}
+]}.
+
 {mapping, "emqx.kafka.bridge.topic", "emqx_kafka_bridge.topic", [
   {datatype, string}
 ]}.
@@ -73,7 +77,7 @@ end}.
                        end, Items);
              "auth" ->  lists:map(fun(Item)->
                        [Option, Value] = string:tokens(Item, ":"),
-                       {list_to_atom(string:trim(Option)), string:trim(Value)}
+                       {list_to_atom(string:trim(Option)), list_to_atom(string:trim(Value))}
                        end, Items)          
           end
   end, Config),
