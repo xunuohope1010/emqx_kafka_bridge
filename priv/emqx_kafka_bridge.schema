@@ -57,7 +57,7 @@ end}.
   ClientConfig = lists:map(fun(X)->
        {Match, Options} = X,
        Type = lists:last(Match),
-       Items = string:split(Options, ",", all),
+       Items = string:split(Options, ";", all),
           case Type of
              "flag" -> lists:map(fun(Item)->
                        [Option, Value] = string:tokens(Item, ":"),
