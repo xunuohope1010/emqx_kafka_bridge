@@ -77,8 +77,13 @@ end}.
                        end, Items);
              "auth" ->  lists:map(fun(Item)->
                        [Option, Value] = string:tokens(Item, ":"),
-                       {list_to_atom(string:trim(Option)), Value}
-                       end, Items)          
+                       {list_to_atom(string:trim(Option)),
+                          authOptions = string:split(Value, ",", all),
+                              lists:map(fun(Y)->
+                                  list_to_atom(string:trim(Y))
+                              end, authOptions)
+                       }
+                       end, Items)   
           end
   end, Config),
   lists: append(ClientConfig)
