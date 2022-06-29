@@ -76,13 +76,11 @@ end}.
                        {list_to_atom(string:trim(Option)), string:trim(Value)}
                        end, Items);
              "auth" ->  lists:map(fun(Item)->
-                       [Option, Value] = string:tokens(Item, ":"),
-                       {list_to_atom(string:trim(Option)),
-                          authOptions = string:split(Value, ",", all),
-                              lists:map(fun(Y)->
-                                  list_to_atom(string:trim(Y))
-                              end, authOptions)
-                       }
+                      [Option, Value] = string:tokens(Item, ":"),
+                       Item2 = string:trim(Value),
+                        [Mechanism, Username, Password] = string:tokens(Item2, ","),
+                        Item4 = {list_to_atom(string:trim(Mechanism)), string:trim(Username), string:trim(Password)},
+                        {list_to_atom(string:trim(Option)), Item4}
                        end, Items)   
           end
   end, Config),
