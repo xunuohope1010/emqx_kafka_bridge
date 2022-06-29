@@ -77,10 +77,8 @@ end}.
                        end, Items);
              "auth" ->  lists:map(fun(Item)->
                       [Option, Value] = string:tokens(Item, ":"),
-                       Item2 = string:trim(Value),
-                        [Mechanism, Username, Password] = string:tokens(Item2, ","),
-                        Item4 = {list_to_atom(string:trim(Mechanism)), string:trim(Username), string:trim(Password)},
-                        {list_to_atom(string:trim(Option)), Item4}
+                      [Mechanism, Username, Password] = string:tokens(string:trim(Value), ","),
+                      {list_to_atom(string:trim(Option)), {list_to_atom(string:trim(Mechanism)), string:trim(Username), string:trim(Password)}}
                        end, Items)   
           end
   end, Config),
