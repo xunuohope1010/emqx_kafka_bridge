@@ -16,7 +16,7 @@
 
 -module(emqx_kafka_bridge).
 
--include("emqx.hrl").
+-include_lib("emqx/include/emqx.hrl").
 
 -export([ load/1
         , unload/0
@@ -24,86 +24,150 @@
 
 -define(APP, emqx_kafka_bridge).
 
-%% Hooks functions
--export([on_client_connected/4, on_client_disconnected/3]).
--export([on_client_subscribe/3, on_client_unsubscribe/3]).
--export([on_session_created/3, on_session_resumed/3, on_session_terminated/3]).
--export([on_session_subscribed/4, on_session_unsubscribed/4]).
--export([on_message_publish/2, on_message_delivered/3, on_message_acked/3, on_message_dropped/3]).
+%% Client Lifecircle Hooks
+-export([ on_client_connect/3
+        , on_client_connack/4
+        , on_client_connected/3
+        , on_client_disconnected/4
+        , on_client_authenticate/3
+        , on_client_check_acl/5
+        , on_client_subscribe/4
+        , on_client_unsubscribe/4
+        ]).
+
+%% Session Lifecircle Hooks
+-export([ on_session_created/3
+        , on_session_subscribed/4
+        , on_session_unsubscribed/4
+        , on_session_resumed/3
+        , on_session_discarded/3
+        , on_session_takeovered/3
+        , on_session_terminated/4
+        ]).
+
+%% Message Pubsub Hooks
+-export([ on_message_publish/2
+        , on_message_delivered/3
+        , on_message_acked/3
+        , on_message_dropped/4
+        ]).
 
 %% Called when the plugin application start
 load(Env) ->
     brod_init([Env]),
-    emqx:hook('client.connected', fun ?MODULE:on_client_connected/4, [Env]),
-    emqx:hook('client.disconnected', fun ?MODULE:on_client_disconnected/3, [Env]),
-    emqx:hook('client.subscribe', fun ?MODULE:on_client_subscribe/3, [Env]),
-    emqx:hook('client.unsubscribe', fun ?MODULE:on_client_unsubscribe/3, [Env]),
-    emqx:hook('session.created', fun ?MODULE:on_session_created/3, [Env]),
-    emqx:hook('session.resumed', fun ?MODULE:on_session_resumed/3, [Env]),
-    emqx:hook('session.subscribed', fun ?MODULE:on_session_subscribed/4, [Env]),
-   emqx:hook('session.unsubscribed', fun ?MODULE:on_session_unsubscribed/4, [Env]),
-    emqx:hook('session.terminated', fun ?MODULE:on_session_terminated/3, [Env]),
-    emqx:hook('message.publish', fun ?MODULE:on_message_publish/2, [Env]),
-    emqx:hook('message.delivered', fun ?MODULE:on_message_delivered/3, [Env]),
-    emqx:hook('message.acked', fun ?MODULE:on_message_acked/3, [Env]),
-    emqx:hook('message.dropped', fun ?MODULE:on_message_dropped/3, [Env]).
+    emqx:hook('client.connect',      {?MODULE, on_client_connect, [Env]}),
+    emqx:hook('client.connack',      {?MODULE, on_client_connack, [Env]}),
+    emqx:hook('client.connected',    {?MODULE, on_client_connected, [Env]}),
+    emqx:hook('client.disconnected', {?MODULE, on_client_disconnected, [Env]}),
+    emqx:hook('client.authenticate', {?MODULE, on_client_authenticate, [Env]}),
+    emqx:hook('client.check_acl',    {?MODULE, on_client_check_acl, [Env]}),
+    emqx:hook('client.subscribe',    {?MODULE, on_client_subscribe, [Env]}),
+    emqx:hook('client.unsubscribe',  {?MODULE, on_client_unsubscribe, [Env]}),
+    emqx:hook('session.created',     {?MODULE, on_session_created, [Env]}),
+    emqx:hook('session.subscribed',  {?MODULE, on_session_subscribed, [Env]}),
+    emqx:hook('session.unsubscribed',{?MODULE, on_session_unsubscribed, [Env]}),
+    emqx:hook('session.resumed',     {?MODULE, on_session_resumed, [Env]}),
+    emqx:hook('session.discarded',   {?MODULE, on_session_discarded, [Env]}),
+    emqx:hook('session.takeovered',  {?MODULE, on_session_takeovered, [Env]}),
+    emqx:hook('session.terminated',  {?MODULE, on_session_terminated, [Env]}),
+    emqx:hook('message.publish',     {?MODULE, on_message_publish, [Env]}),
+    emqx:hook('message.delivered',   {?MODULE, on_message_delivered, [Env]}),
+    emqx:hook('message.acked',       {?MODULE, on_message_acked, [Env]}),
+    emqx:hook('message.dropped',     {?MODULE, on_message_dropped, [Env]}).
+
+%%--------------------------------------------------------------------
+%% Client Lifecircle Hooks
+%%--------------------------------------------------------------------
+
+on_client_connect(ConnInfo = #{clientid := ClientId}, Props, _Env) ->
+    io:format("Client(~s) connect, ConnInfo: ~p, Props: ~p~n",
+              [ClientId, ConnInfo, Props]),
+    {ok, Props}.
+
+on_client_connack(ConnInfo = #{clientid := ClientId}, Rc, Props, _Env) ->
+    io:format("Client(~s) connack, ConnInfo: ~p, Rc: ~p, Props: ~p~n",
+              [ClientId, ConnInfo, Rc, Props]),
+    {ok, Props}.
+
+on_client_connected(ClientInfo = #{clientid := ClientId}, ConnInfo, _Env) ->
+    io:format("Client(~s) connected, ClientInfo:~n~p~n, ConnInfo:~n~p~n",
+              [ClientId, ClientInfo, ConnInfo]).
+
+on_client_disconnected(ClientInfo = #{clientid := ClientId}, ReasonCode, ConnInfo, _Env) ->
+    io:format("Client(~s) disconnected due to ~p, ClientInfo:~n~p~n, ConnInfo:~n~p~n",
+              [ClientId, ReasonCode, ClientInfo, ConnInfo]).
+
+on_client_authenticate(_ClientInfo = #{clientid := ClientId}, Result, _Env) ->
+    io:format("Client(~s) authenticate, Result:~n~p~n", [ClientId, Result]),
+    {ok, Result}.
+
+on_client_check_acl(_ClientInfo = #{clientid := ClientId}, Topic, PubSub, Result, _Env) ->
+    io:format("Client(~s) check_acl, PubSub:~p, Topic:~p, Result:~p~n",
+              [ClientId, PubSub, Topic, Result]),
+    {ok, Result}.
+
+on_client_subscribe(#{clientid := ClientId}, _Properties, TopicFilters, _Env) ->
+    io:format("Client(~s) will subscribe: ~p~n", [ClientId, TopicFilters]),
+    {ok, TopicFilters}.
+
+on_client_unsubscribe(#{clientid := ClientId}, _Properties, TopicFilters, _Env) ->
+    io:format("Client(~s) will unsubscribe ~p~n", [ClientId, TopicFilters]),
+    {ok, TopicFilters}.
+
+%%--------------------------------------------------------------------
+%% Session Lifecircle Hooks
+%%--------------------------------------------------------------------
+
+on_session_created(#{clientid := ClientId}, SessInfo, _Env) ->
+    io:format("Session(~s) created, Session Info:~n~p~n", [ClientId, SessInfo]).
+
+on_session_subscribed(#{clientid := ClientId}, Topic, SubOpts, _Env) ->
+    io:format("Session(~s) subscribed ~s with subopts: ~p~n", [ClientId, Topic, SubOpts]).
+
+on_session_unsubscribed(#{clientid := ClientId}, Topic, Opts, _Env) ->
+    io:format("Session(~s) unsubscribed ~s with opts: ~p~n", [ClientId, Topic, Opts]).
+
+on_session_resumed(#{clientid := ClientId}, SessInfo, _Env) ->
+    io:format("Session(~s) resumed, Session Info:~n~p~n", [ClientId, SessInfo]).
+
+on_session_discarded(_ClientInfo = #{clientid := ClientId}, SessInfo, _Env) ->
+    io:format("Session(~s) is discarded. Session Info: ~p~n", [ClientId, SessInfo]).
+
+on_session_takeovered(_ClientInfo = #{clientid := ClientId}, SessInfo, _Env) ->
+    io:format("Session(~s) is takeovered. Session Info: ~p~n", [ClientId, SessInfo]).
+
+on_session_terminated(_ClientInfo = #{clientid := ClientId}, Reason, SessInfo, _Env) ->
+    io:format("Session(~s) is terminated due to ~p~nSession Info: ~p~n",
+              [ClientId, Reason, SessInfo]).
 
 
-%% Client is online
-on_client_connected(#{client_id := ClientId}, ConnAck, ConnAttrs, _Env) ->
-    io:format("KAFKA Client(~s) connected, connack: ~w, conn_attrs:~p~n", [ClientId, ConnAck, ConnAttrs]).
-
-%% Client disconnected
-on_client_disconnected(#{client_id := ClientId, username := Username}, ReasonCode, _Env) ->
-    io:format("KAFKA Client(~s) disconnected, reason_code: ~w~n", [ClientId, ReasonCode]),
-%%    Now = erlang:timestamp(),
-%%    Payload = [{client_id, ClientId}, {node, node()}, {username, Username}, {reason, ReasonCode}, {ts, emqx_time:now_secs(Now)}],
-%%    Disconnected = proplists:get_value(disconnected, _Env),
-%%    produce_kafka_payload(Disconnected, Username, Payload, _Env),
-    ok.
-
-%% Client subscription topic
-on_client_subscribe(#{client_id := ClientId}, RawTopicFilters, _Env) ->
-    io:format("KAFKA Client(~s) will subscribe: ~p~n", [ClientId, RawTopicFilters]),
-    {ok, RawTopicFilters}.
-
-%% Client unsubscribes topic
-on_client_unsubscribe(#{client_id := ClientId}, RawTopicFilters, _Env) ->
-    io:format("KAFKA Client(~s) unsubscribe ~p~n", [ClientId, RawTopicFilters]),
-    {ok, RawTopicFilters}.
-
-%% Session creation
-on_session_created(#{client_id := ClientId}, SessAttrs, _Env) ->
-    io:format("KAFKA Session(~s) created: ~p~n", [ClientId, SessAttrs]).
-%%    Now = erlang:timestamp(),
-%%    Username = proplists:get_value(username, SessAttrs),
-%%    Payload = [{client_id, ClientId}, {username, Username}, {node, node()},  {ts, emqx_time:now_secs(Now)}],
-%%    Connected = proplists:get_value(connected, _Env),
-%%    produce_kafka_payload(Connected, Username, Payload, _Env).
-
-%% Session resume
-on_session_resumed(#{client_id := ClientId}, SessAttrs, _Env) ->
-    io:format("KAFKA Session(~s) resumed: ~p~n", [ClientId, SessAttrs]).
-
-%% After the session is subscribed
-on_session_subscribed(#{client_id := ClientId, username := Username}, Topic, SubOpts, _Env) ->
-    io:format("KAFKA Session(~s) subscribe ~s with subopts: ~p~n", [ClientId, Topic, SubOpts]).
-%%    Now = erlang:timestamp(),
-%%    Payload = [{client_id, ClientId}, {node, node()}, {username, Username}, {topic, Topic}, {ts, emqx_time:now_secs(Now)}],
-%%    Subscribed = proplists:get_value(subscribed, _Env),
-%%    produce_kafka_payload(Subscribed, Username, Payload, _Env).
-
-%% After the session unsubscribes the topic
-on_session_unsubscribed(#{client_id := ClientId}, Topic, Opts, _Env) ->
-    io:format("KAFKA Session(~s) unsubscribe ~s with opts: ~p~n", [ClientId, Topic, Opts]).
-
-%% Session terminated
-on_session_terminated(#{client_id := ClientId}, ReasonCode, _Env) ->
-    io:format("KAFKA Session(~s) terminated: ~p.", [ClientId, ReasonCode]).
+%%--------------------------------------------------------------------
+%% Message PubSub Hooks
+%%--------------------------------------------------------------------
 
 %% Transform message and return
 on_message_publish(Message = #message{topic = <<"$SYS/", _/binary>>}, _Env) ->
     {ok, Message};
+
+% on_message_publish(Message, _Env) ->
+%     io:format("Publish ~s~n", [emqx_message:format(Message)]),
+%     {ok, Message}.
+
+on_message_dropped(#message{topic = <<"$SYS/", _/binary>>}, _By, _Reason, _Env) ->
+    ok;
+on_message_dropped(Message, _By = #{node := Node}, Reason, _Env) ->
+    io:format("Message dropped by node ~s due to ~s: ~s~n",
+              [Node, Reason, emqx_message:format(Message)]).
+
+on_message_delivered(_ClientInfo = #{clientid := ClientId}, Message, _Env) ->
+    io:format("Message delivered to client(~s): ~s~n",
+              [ClientId, emqx_message:format(Message)]),
+    {ok, Message}.
+
+on_message_acked(_ClientInfo = #{clientid := ClientId}, Message, _Env) ->
+    io:format("Message acked by client(~s): ~s~n",
+              [ClientId, emqx_message:format(Message)]).
+
 
 on_message_publish(Message = #message{id = MsgId,
                         qos = Qos,
@@ -133,23 +197,6 @@ on_message_publish(Message = #message{id = MsgId,
        {ok, Message}
     end.
 
-%% MQTT message delivery
-on_message_delivered(#{client_id := ClientId}, Message, _Env) ->
-    io:format("KAFKA Delivered message to client(~s): ~s~n", [ClientId, emqx_message:format(Message)]),
-    {ok, Message}.
-
-%% MQTT message receipt
-on_message_acked(#{client_id := ClientId}, Message, _Env) ->
-    io:format("KAFKA Session(~s) acked message: ~s~n", [ClientId, emqx_message:format(Message)]),
-    {ok, Message}.
-
-%% MQTT message discarded
-on_message_dropped(_By, #message{topic = <<"$SYS/", _/binary>>}, _Env) ->
-    ok;
-on_message_dropped(#{node := Node}, Message, _Env) ->
-    io:format("KAFKA Message dropped by node ~s: ~s~n", [Node, emqx_message:format(Message)]);
-on_message_dropped(#{client_id := ClientId}, Message, _Env) ->
-    io:format("KAFKA Message dropped by client ~s: ~s~n", [ClientId, emqx_message:format(Message)]).
 
 brod_init(_Env) ->
     {ok, _} = application:ensure_all_started(brod),
@@ -162,22 +209,6 @@ getPartiton(Key, Partitions) ->
      <<Fix:120, Match:8>> = crypto:hash(md5, Key),
      abs(Match) rem Partitions.
 
-%% Called when the plugin application stop
-unload() ->
-    emqx:unhook('client.connected', fun ?MODULE:on_client_connected/4),
-    emqx:unhook('client.disconnected', fun ?MODULE:on_client_disconnected/3),
-    emqx:unhook('client.subscribe', fun ?MODULE:on_client_subscribe/3),
-    emqx:unhook('client.unsubscribe', fun ?MODULE:on_client_unsubscribe/3),
-    emqx:unhook('session.created', fun ?MODULE:on_session_created/3),
-    emqx:unhook('session.resumed', fun ?MODULE:on_session_resumed/3),
-    emqx:unhook('session.subscribed', fun ?MODULE:on_session_subscribed/4),
-    emqx:unhook('session.unsubscribed', fun ?MODULE:on_session_unsubscribed/4),
-    emqx:unhook('session.terminated', fun ?MODULE:on_session_terminated/3),
-    emqx:unhook('message.publish', fun ?MODULE:on_message_publish/2),
-    emqx:unhook('message.delivered', fun ?MODULE:on_message_delivered/3),
-    emqx:unhook('message.acked', fun ?MODULE:on_message_acked/3),
-    emqx:unhook('message.dropped', fun ?MODULE:on_message_dropped/3).
-
 produce_kafka_payload(Key, Username, Message, _Env) ->
     {ok, MessageBody} = emqx_json:safe_encode(Message),
     % MessageBody64 = base64:encode_to_string(MessageBody),
@@ -185,3 +216,25 @@ produce_kafka_payload(Key, Username, Message, _Env) ->
     Partition = proplists:get_value(partition, _Env),
     Topic = iolist_to_binary(Key),
     brod:produce_sync(brod_client_1, Topic, getPartiton(Username,Partition), Username, Payload).
+
+%% Called when the plugin application stop
+unload() ->
+    emqx:unhook('client.connect',      {?MODULE, on_client_connect}),
+    emqx:unhook('client.connack',      {?MODULE, on_client_connack}),
+    emqx:unhook('client.connected',    {?MODULE, on_client_connected}),
+    emqx:unhook('client.disconnected', {?MODULE, on_client_disconnected}),
+    emqx:unhook('client.authenticate', {?MODULE, on_client_authenticate}),
+    emqx:unhook('client.check_acl',    {?MODULE, on_client_check_acl}),
+    emqx:unhook('client.subscribe',    {?MODULE, on_client_subscribe}),
+    emqx:unhook('client.unsubscribe',  {?MODULE, on_client_unsubscribe}),
+    emqx:unhook('session.created',     {?MODULE, on_session_created}),
+    emqx:unhook('session.subscribed',  {?MODULE, on_session_subscribed}),
+    emqx:unhook('session.unsubscribed',{?MODULE, on_session_unsubscribed}),
+    emqx:unhook('session.resumed',     {?MODULE, on_session_resumed}),
+    emqx:unhook('session.discarded',   {?MODULE, on_session_discarded}),
+    emqx:unhook('session.takeovered',  {?MODULE, on_session_takeovered}),
+    emqx:unhook('session.terminated',  {?MODULE, on_session_terminated}),
+    emqx:unhook('message.publish',     {?MODULE, on_message_publish}),
+    emqx:unhook('message.delivered',   {?MODULE, on_message_delivered}),
+    emqx:unhook('message.acked',       {?MODULE, on_message_acked}),
+    emqx:unhook('message.dropped',     {?MODULE, on_message_dropped}).
