@@ -16,7 +16,7 @@
 
 -module(emqx_kafka_bridge).
 
--include("emqx.hrl").
+-include_lib("emqx/include/emqx.hrl").
 
 -export([ load/1
         , unload/0
