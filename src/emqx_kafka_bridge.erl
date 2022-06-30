@@ -183,7 +183,7 @@ produce_kafka_payload(Key, Username, Message, _Env) ->
     brod:produce_sync(brod_client_1, Topic, getPartiton(Username,Partition), Username, Payload).
 
 %% Called when the plugin application stop
-unload(Env) ->
+unload() ->
     emqx:unhook('client.connected', fun ?MODULE:on_client_connected/3, [Env]),
     emqx:unhook('client.disconnected', fun ?MODULE:on_client_disconnected/4, [Env]),
     emqx:unhook('client.subscribe', fun ?MODULE:on_client_subscribe/4, [Env]),
