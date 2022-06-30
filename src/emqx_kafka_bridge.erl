@@ -184,16 +184,16 @@ produce_kafka_payload(Key, Username, Message, _Env) ->
 
 %% Called when the plugin application stop
 unload() ->
-    emqx:unhook('client.connected', fun ?MODULE:on_client_connected/3, [Env]),
-    emqx:unhook('client.disconnected', fun ?MODULE:on_client_disconnected/4, [Env]),
-    emqx:unhook('client.subscribe', fun ?MODULE:on_client_subscribe/4, [Env]),
-    emqx:unhook('client.unsubscribe', fun ?MODULE:on_client_unsubscribe/3, [Env]),
-    emqx:unhook('session.created', fun ?MODULE:on_session_created/3, [Env]),
-    emqx:unhook('session.resumed', fun ?MODULE:on_session_resumed/3, [Env]),
-    emqx:unhook('session.subscribed', fun ?MODULE:on_session_subscribed/4, [Env]),
-    emqx:unhook('session.unsubscribed', fun ?MODULE:on_session_unsubscribed/4, [Env]),
-    emqx:unhook('session.terminated', fun ?MODULE:on_session_terminated/4, [Env]),
-    emqx:unhook('message.publish', fun ?MODULE:on_message_publish/2, [Env]),
-    emqx:unhook('message.delivered', fun ?MODULE:on_message_delivered/3, [Env]),
-    emqx:unhook('message.acked', fun ?MODULE:on_message_acked/3, [Env]),
-    emqx:unhook('message.dropped', fun ?MODULE:on_message_dropped/4, [Env]).
+    emqx:unhook('client.connected', fun ?MODULE:on_client_connected/3),
+    emqx:unhook('client.disconnected', fun ?MODULE:on_client_disconnected/4),
+    emqx:unhook('client.subscribe', fun ?MODULE:on_client_subscribe/4),
+    emqx:unhook('client.unsubscribe', fun ?MODULE:on_client_unsubscribe/3),
+    emqx:unhook('session.created', fun ?MODULE:on_session_created/3),
+    emqx:unhook('session.resumed', fun ?MODULE:on_session_resumed/3),
+    emqx:unhook('session.subscribed', fun ?MODULE:on_session_subscribed/4),
+    emqx:unhook('session.unsubscribed', fun ?MODULE:on_session_unsubscribed/4),
+    emqx:unhook('session.terminated', fun ?MODULE:on_session_terminated/4),
+    emqx:unhook('message.publish', fun ?MODULE:on_message_publish/2),
+    emqx:unhook('message.delivered', fun ?MODULE:on_message_delivered/3),
+    emqx:unhook('message.acked', fun ?MODULE:on_message_acked/3),
+    emqx:unhook('message.dropped', fun ?MODULE:on_message_dropped/4).
